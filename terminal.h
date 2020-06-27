@@ -41,28 +41,24 @@ struct cell {
 };
 
 struct terminal {
-  int fd;
+  int pid;
+  int fd_master;
+  int fd_slave; // we don't need to take care for this
   font_data* font;
   unsigned int cols, rows;
-  unsigned int width, height; // pixel size
   enum CELL_ATTRIBUTE attr;
-  struct cell* screen; 
+  struct cell* screen;        // For screen data only, not for saving lines
   struct esc_sequence esc;
   struct point cursor;
   unsigned long custom_color[COLORS];
 };
 
 bool init_terminal(struct terminal* t, unsigned int cols, unsigned int rows, font_data* font) {
-  unsigned int h, w;
 
   t->font = font;
   t->cols = cols;
   t->rows = rows;
-
-  terminal_pixel_size(font, cols, rows, &w, &h);
-  t->width = w;
-  t->height = h;
-
+  
   t->attr = ATTR_OFF;
   t->cursor.x = 0;
   t->cursor.y = 0;

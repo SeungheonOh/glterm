@@ -25,7 +25,6 @@ enum LogLevel {
 #define LOG_BUFFER_MAX 16000
 
 // Print all logs higher than log level
-//static unsigned long _LogLevel = DISCORD_LOG_ERROR | DISCORD_LOG_WARNING | DISCORD_LOG_NOTICE;
 static unsigned long _loglevel = LOG_ALL;
 
 void set_loglevel(enum LogLevel ll) { _loglevel= ll; }
@@ -33,12 +32,12 @@ void set_loglevel(enum LogLevel ll) { _loglevel= ll; }
 // Simple enum to string
 char *_log_level_name(enum LogLevel ll) {
   switch(ll) {
-    case LOG_ERROR:   return "ERROR";    break;
-    case LOG_WARNING: return "WARNING";  break;
-    case LOG_NOTICE:  return "NOTICE";   break;
-    case LOG_INFO:    return "INFO";     break;
-    case LOG_DEBUG:   return "DEBUG";    break;
-    default:          return "UNKOWNN";  break;
+    case LOG_ERROR:   return " ERROR ";   break;
+    case LOG_WARNING: return "WARNING";   break;
+    case LOG_NOTICE:  return "NOTICE ";   break;
+    case LOG_INFO:    return " INFO  ";   break;
+    case LOG_DEBUG:   return " DEBUG ";   break;
+    default:          return "UNKOWNN";   break;
   }
 }
 
