@@ -175,11 +175,16 @@ GLFWwindow* create_window(char* name, struct terminal* term) {
     log_error("%s: Failed to create window", __func__);
     exit(EXIT_FAILURE);
   }
+
+  // Settings
   glfwMakeContextCurrent(win);
   glfwSwapInterval(0); // 0 = no frame limit, 1 = limit frame
   glfwSetWindowUserPointer(win, (void*)context);
+  glfwSetInputMode(win, GLFW_LOCK_KEY_MODS, GLFW_TRUE);
+  // consider sticky key mode
+  //glfwSetInputMode(win, GLFW_STICKY_KEYS, GLFW_TRUE);
   
-  // callbacks
+  // Callbacks
   glfwSetKeyCallback(win, glfw_keyboard_callback);
   glfwSetMouseButtonCallback(win, glfw_button_callback);
   //glfwSetCharCallback(win, glfw_text_callback);

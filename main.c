@@ -35,8 +35,6 @@ int main(int argc, char** argv) {
   win = create_window("win", &term);
   GLuint ftexture = make_font_texture(&font);
 
-  pseudo_write(&term, "echo helloworld\r", strlen("echo helloworld\r"));
-
   while(!glfwWindowShouldClose(win)) {
     char buffer[100] = "\0";
     if(pseudo_listen(&term, buffer, 100) > 0) log_debug("terminal: %s", buffer);

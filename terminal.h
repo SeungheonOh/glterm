@@ -8,7 +8,7 @@
 #define RGB(R,G,B) (R << 16 | G << 8 | B)
 
 enum ESC_STATE {
-  STATE_NUTRAL,  // No mode
+  STATE_NEUTRAL,  // No mode
   STATE_ESC,     // Escape
   STATE_CSI,     // Escape(CSI)
   STATE_OSC,     // Escape(OSC)
