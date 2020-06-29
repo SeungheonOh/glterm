@@ -10,6 +10,8 @@
 #include <errno.h>
 
 void sigchld(int a) {
+  log_debug("Got sigchld from child process/ TODO");
+  // TODO handle this
 	exit(0);
 }
 
@@ -38,7 +40,7 @@ bool run_shell(char* fallback_shell) {
   execvp(shell, (char*[]){NULL});
 }
 
-bool init_pseudo(struct terminal* term, unsigned int cols, unsigned int rows) {
+bool pseudo_init(struct terminal* term, unsigned int cols, unsigned int rows) {
   int m, pid;
   switch(pid = forkpty(&m, NULL, NULL, &(struct winsize) {.ws_row = rows, .ws_col = cols})) {
   case -1:
@@ -61,7 +63,7 @@ bool init_pseudo(struct terminal* term, unsigned int cols, unsigned int rows) {
   return true;
 }
 
-bool kill_pseudo(struct terminal* term) {
+bool pseudo_kill(struct terminal* term) {
   kill(term->pid, SIGTERM);
   close(term->fd_master);
   waitpid(term->pid, NULL, 0);

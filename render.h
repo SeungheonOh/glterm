@@ -34,9 +34,7 @@ static void glfw_text_callback(GLFWwindow* window, unsigned int codepoint) {
 
 static void glfw_keyboard_callback(GLFWwindow* window, int key, int scancode, int action, int mods) {
   struct render_context* context = (struct render_context*)glfwGetWindowUserPointer(window);
-  if(action) log_info("keypress: %d() %d %d %d", key, scancode, action, mods);
-  if (key == GLFW_KEY_ESCAPE && action == GLFW_PRESS)
-      glfwSetWindowShouldClose(window, GL_TRUE);
+  if (key == GLFW_KEY_ESCAPE && action == GLFW_PRESS) glfwSetWindowShouldClose(window, GL_TRUE);
 
   // Only do action when key is 'Pressed'
   if(action == GLFW_PRESS) send_glfw_keycode(context->terminal, key, mods);
@@ -100,11 +98,13 @@ void glfw_render(GLFWwindow* win, struct terminal* term, GLuint ftexture) {
 
   glLoadIdentity();
   glOrtho(0, width, height, 0, 0, 1);
-    for(int l = 0; l < term->rows; l++) {
+  for(int l = 0; l < term->rows; l++) {
     float offsetx = 0, offsety = (term->font->max_height) * (l+1);
     for(int i = 0; i < term->cols; i++) {
       struct cell target_cell = term->screen[i + l * term->cols];
-      if(!target_cell.c) continue;
+      if(!target_cell.d) continue; // if cell is empty
+      if(target_cell.c < term->font->setting.first 
+          || target_cell.c > term->font->setting.first + term->font->setting.count) continue;
       stbtt_aligned_quad q;
       offsetx = (term->font->max_width) * i;
       stbtt_GetPackedQuad(term->font->chardata, 
@@ -151,7 +151,7 @@ void glfw_render(GLFWwindow* win, struct terminal* term, GLuint ftexture) {
 }
 
 // * need init_terminal()
-GLFWwindow* create_window(char* name, struct terminal* term) {
+GLFWwindow* window_create(char* name, struct terminal* term) {
   struct render_context* context = malloc(sizeof(struct render_context));
 
   unsigned int w, h;
@@ -191,7 +191,7 @@ GLFWwindow* create_window(char* name, struct terminal* term) {
   return win;
 }
 
-void destroy_window(GLFWwindow* win) {
+void window_destroy(GLFWwindow* win) {
   free(glfwGetWindowUserPointer(win));
   glfwDestroyWindow(win);
   glfwTerminate();

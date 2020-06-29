@@ -15,13 +15,13 @@ enum ESC_STATE {
   STATE_DCS      // Escape(DCS)
 };
 
-struct point {
-  unsigned int x, y;
-};
-
 struct esc_sequence {
   bytebuffer* buf;        // For storing esc codes
   enum ESC_STATE state;   // State of parser
+};
+
+struct point {
+  unsigned int x, y;
 };
 
 enum CELL_ATTRIBUTE {
@@ -34,6 +34,7 @@ enum CELL_ATTRIBUTE {
 };
 
 struct cell {
+  bool d;                       // Dirty
   unsigned int c;               // Chacter
   unsigned long fg;             // Foreground
   unsigned long bg;             // Background
@@ -53,7 +54,7 @@ struct terminal {
   unsigned long custom_color[COLORS];
 };
 
-bool init_terminal(struct terminal* t, unsigned int cols, unsigned int rows, font_data* font) {
+bool terminal_init(struct terminal* t, unsigned int cols, unsigned int rows, font_data* font) {
 
   t->font = font;
   t->cols = cols;
@@ -63,6 +64,7 @@ bool init_terminal(struct terminal* t, unsigned int cols, unsigned int rows, fon
   t->cursor.x = 0;
   t->cursor.y = 0;
 
+  t->esc.state = STATE_NEUTRAL;
   t->esc.buf = bytebuffer_init(50); // initial esc buffer size TODO
   t->screen = malloc(sizeof(struct cell) * cols * rows);
 
@@ -71,8 +73,47 @@ bool init_terminal(struct terminal* t, unsigned int cols, unsigned int rows, fon
   return true;
 }
 
+void terminal_clear(struct terminal* t) {
+  for(int i = 0; i < t->cols * t->rows; i++)
+    t->screen[i].d = false;
+}
+
+void terminal_set_cursor(struct terminal* t, unsigned int x, unsigned y) {
+  t->cursor.x = (x > t->cols) ? t->cols : x;
+  t->cursor.y = (y > t->rows) ? t->rows : y;
+}
+
+void terminal_cursor_next(struct terminal* t) {
+  t->cursor.x++;
+  if(t->cursor.x >= t->cols) {
+    t->cursor.x = 0;
+    t->cursor.y++;
+  }
+}
+
+void terminal_write_byte(struct terminal* t, char s) {
+  int index = t->cursor.x + t->cursor.y * t->cols;
+  if(index > t->cols * t->rows){
+    terminal_clear(t);
+    terminal_set_cursor(t, 0, 0);
+    return;
+  }
+  t->screen[index].d = true;
+  t->screen[index].c = s;
+  t->screen[index].fg = RGB(255, 255, 255);
+  t->screen[index].bg = RGB(255, 255, 255);
+  terminal_cursor_next(t);
+}
+
+void terminal_write(struct terminal* t, char* s, size_t l) {
+  for(int i = 0; i < l; i++)
+    terminal_write_byte(t, s[i]);
+}
+
 void test_setcells(struct terminal* t){
   for(int i = 0; i < t->cols * t->rows; i++) {
+    t->screen[i].d = false;
+    continue;
     t->screen[i].c = i%128;
     t->screen[i].fg = color256[i%256];
     t->screen[i].bg = color256[i%256];

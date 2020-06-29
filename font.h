@@ -28,7 +28,7 @@ typedef struct {
   float max_height;
 } font_data;
 
-bool load_font(const char* fontname, atlas_settings setting, font_data* ret) {
+bool font_load(const char* fontname, atlas_settings setting, font_data* ret) {
   if(!ret) {
     log_debug("%s: given argument (ret) is NULL", __func__);
     return 0;
@@ -89,7 +89,7 @@ void terminal_pixel_size(font_data* f, unsigned int cols, unsigned int rows, uns
   *y = f->max_height * rows;
 }
 
-void free_font(font_data* f) {
+void font_free(font_data* f) {
   free(f->atlas);
   free(f->chardata);
 }

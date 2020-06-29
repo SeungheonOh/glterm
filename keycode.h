@@ -9,7 +9,6 @@
  * This functions handles modifers and sends corresponding char* to terminal
  */
 void handle_modifer(struct terminal* term, int mod, char* neutral, char* shift, char* control, char* alt, char* numlock) {
-  log_debug("%d %d", GLFW_MOD_NUM_LOCK, mod);
   if(mod == GLFW_MOD_SHIFT || mod == GLFW_MOD_CAPS_LOCK && strlen(shift) > 0)
     pseudo_write(term, shift, strlen(shift));
   else if(mod == GLFW_MOD_CONTROL && strlen(control) > 0)
@@ -163,7 +162,6 @@ void send_glfw_keycode(struct terminal* term, int key, int mod) {
     case GLFW_KEY_RIGHT_ALT:
     case GLFW_KEY_RIGHT_SUPER:
     case GLFW_KEY_MENU:
-      break;
     default:
       break;
   }
