@@ -4,7 +4,6 @@
  * need to check shift/capslock first then check other masks
  */
 
-
 /*
  * This functions handles modifers and sends corresponding char* to terminal
  */
