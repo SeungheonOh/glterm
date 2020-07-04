@@ -36,7 +36,7 @@ static void glfw_keyboard_callback(GLFWwindow* window, int key, int scancode, in
   struct render_context* context = (struct render_context*)glfwGetWindowUserPointer(window);
   if (key == GLFW_KEY_ESCAPE && action == GLFW_PRESS) glfwSetWindowShouldClose(window, GL_TRUE);
 
-  // Only do action when key is 'Pressed'
+  // Only do action when key is 'Pressed' TODO
   if(action == GLFW_PRESS) send_glfw_keycode(context->terminal, key, mods);
 }
 
@@ -98,6 +98,11 @@ void glfw_render(GLFWwindow* win, struct terminal* term, GLuint ftexture) {
 
   glLoadIdentity();
   glOrtho(0, width, height, 0, 0, 1);
+  glEnable(GL_TEXTURE_2D);
+  glBindTexture(GL_TEXTURE_2D, ftexture);
+  glActiveTexture(ftexture);
+  glBegin(GL_QUADS);
+
   for(int l = 0; l < term->rows; l++) {
     float offsetx = 0, offsety = (term->font->max_height) * (l+1);
     for(int i = 0; i < term->cols; i++) {
@@ -129,10 +134,6 @@ void glfw_render(GLFWwindow* win, struct terminal* term, GLuint ftexture) {
       */
 
       // Font / Foreground
-      glEnable(GL_TEXTURE_2D);
-      glBindTexture(GL_TEXTURE_2D, ftexture);
-      glActiveTexture(ftexture);
-      glBegin(GL_QUADS);
       glColor3f((float)RED(target_cell.fg)/255, 
           (float)GREEN(target_cell.fg)/255, 
           (float)BLUE(target_cell.fg)/255);
@@ -140,11 +141,12 @@ void glfw_render(GLFWwindow* win, struct terminal* term, GLuint ftexture) {
       glTexCoord2f(q.s1,q.t0);  glVertex2f(q.x1, q.y0);
       glTexCoord2f(q.s1,q.t1);  glVertex2f(q.x1, q.y1);
       glTexCoord2f(q.s0,q.t1);  glVertex2f(q.x0, q.y1);
-      glEnd();
-      glDisable(GL_TEXTURE_2D);
+      
 
     }
   }
+  glEnd();
+  glDisable(GL_TEXTURE_2D);
   glDisable(GL_TEXTURE_2D);
 
   if(((struct render_context*)glfwGetWindowUserPointer(win))->cube) glfw_cube(win);
@@ -178,7 +180,7 @@ GLFWwindow* window_create(char* name, struct terminal* term) {
 
   // Settings
   glfwMakeContextCurrent(win);
-  glfwSwapInterval(0); // 0 = no frame limit, 1 = limit frame
+  glfwSwapInterval(1); // 0 = no frame limit, 1 = limit frame
   glfwSetWindowUserPointer(win, (void*)context);
   glfwSetInputMode(win, GLFW_LOCK_KEY_MODS, GLFW_TRUE);
   // consider sticky key mode

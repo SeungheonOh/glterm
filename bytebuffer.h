@@ -19,6 +19,10 @@ size_t bytebuffer_size(bytebuffer* b) {
   return b->p - b->buf;
 }
 
+/*
+ * Check if there's enough space to write 's' bytes
+ * if space is not enough allocate with 2x space
+ */
 void _bytebuffer_alloc(bytebuffer* b, size_t s) {
   if(bytebuffer_size(b) + s < b->alloc_size) return;
   if(b->alloc_size * 2 < 0) return;
@@ -36,7 +40,7 @@ void bytebuffer_append(bytebuffer* b, char* c, size_t s) {
 }
 
 void bytebuffer_clear(bytebuffer* b) {
-  b->buf = b->p;
+  b->p = b->buf;
 }
 
 void bytebuffer_free(bytebuffer* b) {

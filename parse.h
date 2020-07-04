@@ -85,18 +85,47 @@ bool esc_validate(enum ESC_STATE state, char c) {
   return false;
 }
 
+bool esc_is_complete(struct esc_sequence esc) {
+  enum ESC_STATE state = esc.state;
+  enum CHARACTER_TYPE chtype = char_categorize(esc.buf->buf[bytebuffer_size(esc.buf) - 1]);
+  if(state == STATE_NEUTRAL) return true;
+  else if(state == STATE_ESC) {
+    if(chtype == PARAMETER
+        || chtype == UPPERCASE
+        || chtype == LOWERCASE) return true;
+    else return false;
+  } else if(state == STATE_CSI) {
+    if(chtype == UPPERCASE
+        || chtype == LOWERCASE) return true;
+    else return false;
+  } else if(state == STATE_DCS) {
+    if(esc.buf->buf[bytebuffer_size(esc.buf) - 1] == '\007'
+        || (esc.buf->buf[bytebuffer_size(esc.buf) - 1] == '\\'
+        && esc.buf->buf[bytebuffer_size(esc.buf) - 2] == '\033')) return true;
+    else return false;
+  } else if(state == STATE_OSC) {
+    if(esc.buf->buf[bytebuffer_size(esc.buf) - 1] == '\007'
+        || (esc.buf->buf[bytebuffer_size(esc.buf) - 1] == '\\'
+        && esc.buf->buf[bytebuffer_size(esc.buf) - 2] == '\033')) return true;
+    else return false;
+  } else return true;
+}
+
+
 void esc_reset(struct terminal* t) {
   bytebuffer_clear(t->esc.buf);
+  t->esc.state = STATE_NEUTRAL;
 }
 
 bool esc_append(struct terminal* t, char c) {
+  bytebuffer_append(t->esc.buf, &c, 1);
+  if (esc_is_complete(t->esc)) return true;
   if(!esc_validate(t->esc.state, c)) {
     log_debug("invalid sequence");
     esc_reset(t);
-    t->esc.state = STATE_NEUTRAL;
     return false;
   }
-  bytebuffer_append(t->esc.buf, &c, 1);
+  return false;
 }
 
 /*
@@ -106,10 +135,14 @@ bool esc_append(struct terminal* t, char c) {
  * change state to STATE_ESC when ESC is given
  */
 void control_character(struct terminal* t, char c) {
-  log_debug("control character : %d", c);
   t->esc.state = STATE_NEUTRAL;
-
   if(c == '\033')t->esc.state = STATE_ESC;
+  else if(c == '\n')terminal_cursor_next_line(t);
+  else if(c == 8) {
+    t->cursor.x--;
+    terminal_erase_cell(t, t->cursor.x, t->cursor.y);
+  }
+  log_debug("control character : %d", c);
 }
 
 /*
@@ -118,22 +151,42 @@ void control_character(struct terminal* t, char c) {
  *
  * change state to control sequence(csi) when [ is given
  * change state to device control sequence(dcs) when P is given
- * change state to operating system command(ocs) when ] is given
+ * change state to operating system command(osc) when ] is given
  */
 void escape_sequence(struct terminal* t, char c) {
-  log_debug("escape_sequence : %d %c", c, c);
-  //t->esc.state = STATE_NEUTRAL;
   if(c == '[') t->esc.state = STATE_CSI;
+  else if(c == ']') t->esc.state = STATE_DCS;
+  else if(c == 'P') t->esc.state = STATE_OSC;
+  else {
+    log_debug("escape_sequence : %d %c", c, c);
+    t->esc.state = STATE_NEUTRAL;
+    esc_reset(t);
+  }
 }
 
 void control_sequence(struct terminal* t, char c) {
-  
-  if(c >= 64 && c <= 126) {
-    log_debug("CSI complete: %.*s", bytebuffer_size(t->esc.buf), t->esc.buf->buf);
+  log_debug("CSI complete: %.*s", bytebuffer_size(t->esc.buf), t->esc.buf->buf);
 
-    esc_reset(t);
-    t->esc.state = STATE_NEUTRAL;
+  bytebuffer_append(t->esc.buf, "\0", 1);
+  if(strcmp(t->esc.buf->buf, "[H") == 0) {
+    terminal_set_cursor(t, 0, 0);
+  } else if(strcmp(t->esc.buf->buf, "[2J") == 0) {
+    terminal_clear(t);
+  } else if(strcmp(t->esc.buf->buf, "[C") == 0) {
+    t->cursor.x--;
+    terminal_erase_cell(t, t->cursor.x, t->cursor.y);
   }
+  esc_reset(t);
+}
+
+void device_control_sequence(struct terminal* t, char c) {
+  log_debug("DCS complete: %.*s", bytebuffer_size(t->esc.buf), t->esc.buf->buf);
+  esc_reset(t);
+}
+
+void operating_system_command(struct terminal* t, char c) {
+  log_debug("OSC complete: %.*s", bytebuffer_size(t->esc.buf), t->esc.buf->buf);
+  esc_reset(t);
 }
 
 void parse(struct terminal* term, char* buf, int size) {
@@ -151,9 +204,11 @@ void parse(struct terminal* term, char* buf, int size) {
       if(esc_append(term, c))
         control_sequence(term, c);
     } else if(term->esc.state == STATE_OSC) {
-      if(esc_append(term, c));
+      if(esc_append(term, c))
+        device_control_sequence(term, c);
     } else if(term->esc.state == STATE_DCS) {
-      if(esc_append(term, c));
+      if(esc_append(term, c))
+        operating_system_command(term, c);
     }
   }
 }

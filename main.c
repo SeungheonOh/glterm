@@ -29,8 +29,8 @@ int main(int argc, char** argv) {
   font_load(argv[1], atlas, &font);
 
   struct terminal term;
-  terminal_init(&term, 80, 24, &font);
-  pseudo_init(&term, 80, 24);
+  terminal_init(&term, 80, 70, &font);
+  pseudo_init(&term, 80, 70);
   test_setcells(&term);
 
   win = window_create("win", &term);
@@ -45,21 +45,21 @@ int main(int argc, char** argv) {
 
     char buffer[100] = "\0";
     int n;
-    if((n = pseudo_listen(&term, buffer, 100)) > 0) {
+    if((n = pseudo_listen(&term, buffer, 100)) > 0 || currentTime - prevFrameTime >= 1.0) {
       //log_debug("terminal: %s", buffer);
       //terminal_write(&term, buffer, n);
       parse(&term, buffer, n);
+
+      float ratio;
+      int width, height;
+
+      glfwGetFramebufferSize(win, &width, &height);
+      glViewport(0, 0, width, height);
+      glClearColor(0, 0, 0, 1);
+      glClear(GL_COLOR_BUFFER_BIT);
+
+      glfw_render(win, &term, ftexture);
     }
-
-    float ratio;
-    int width, height;
-
-    glfwGetFramebufferSize(win, &width, &height);
-    glViewport(0, 0, width, height);
-    glClearColor(0, 0, 0, 1);
-    glClear(GL_COLOR_BUFFER_BIT);
-
-    glfw_render(win, &term, ftexture);
 
     glfwSwapBuffers(win);
     glfwPollEvents();

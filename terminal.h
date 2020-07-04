@@ -78,9 +78,31 @@ void terminal_clear(struct terminal* t) {
     t->screen[i].d = false;
 }
 
+void terminal_erase_cell(struct terminal* t, unsigned int x, unsigned y) {
+  t->screen[x + y * t->cols].d = false;
+}
+
 void terminal_set_cursor(struct terminal* t, unsigned int x, unsigned y) {
   t->cursor.x = (x > t->cols) ? t->cols : x;
   t->cursor.y = (y > t->rows) ? t->rows : y;
+}
+
+void terminal_set_cell(struct terminal* t, char c, unsigned int x, unsigned y) {
+  int index = x + y * t->cols;
+  t->screen[index].d = true;
+  t->screen[index].c = c;
+  t->screen[index].fg = RGB(255, 255, 255);
+  t->screen[index].bg = RGB(255, 255, 255);
+}
+
+void terminal_scroll(struct terminal* t, int l) {
+  //terminal_clear(t);
+  for(int i = 0; i < t->rows; i++)
+    for(int j = 0; j < t->cols; j++)
+      if(j + (i + l) * t->cols < t->rows * t->cols && t->screen[j + (i + l) * t->cols].d)
+        terminal_set_cell(t, t->screen[j + (i + l) * t->cols].c, j, i);
+      else 
+        terminal_erase_cell(t, j, i);
 }
 
 void terminal_cursor_next(struct terminal* t) {
@@ -89,19 +111,30 @@ void terminal_cursor_next(struct terminal* t) {
     t->cursor.x = 0;
     t->cursor.y++;
   }
+  if(t->cursor.y >= t->rows) {
+    terminal_scroll(t, 1);
+    t->cursor.y = t->rows-1;
+  }
 }
 
-void terminal_write_byte(struct terminal* t, char s) {
-  int index = t->cursor.x + t->cursor.y * t->cols;
-  if(index > t->cols * t->rows){
-    terminal_clear(t);
-    terminal_set_cursor(t, 0, 0);
+void terminal_cursor_next_line(struct terminal* t) {
+  t->cursor.x = 0;
+  t->cursor.y++;
+  if(t->cursor.y >= t->rows) {
+    terminal_scroll(t, 1);
+    t->cursor.y = t->rows-1;
+  }
+}
+
+void terminal_write_byte(struct terminal* t, char c) {
+  if(t->cursor.x + t->cursor.y * t->cols > t->cols * t->rows){
+    //log_debug("this should never be printed");
+    //terminal_clear(t);
+    //terminal_set_cursor(t, 0, 0);
+    //terminal_scroll(t, 1);
     return;
   }
-  t->screen[index].d = true;
-  t->screen[index].c = s;
-  t->screen[index].fg = RGB(255, 255, 255);
-  t->screen[index].bg = RGB(255, 255, 255);
+  terminal_set_cell(t, c, t->cursor.x, t->cursor.y);
   terminal_cursor_next(t);
 }
 

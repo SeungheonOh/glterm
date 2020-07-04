@@ -6,6 +6,7 @@ let
     glfw3
     libGLU
     gdb
+    valgrind
   ];
 
 in 
