@@ -3,6 +3,7 @@
  * TODO: use table for state instead
  *
  * Resources:
+ * http://www.vt100.net
  * http://www.vt100.net/docs/vt102-ug/appendixd.htm
  * https://www.vt100.net/docs/vt320-uu/appendixe.html
  * https://www.inwap.com/pdp10/ansicode.txt
@@ -44,6 +45,7 @@
 #include <stdbool.h>
 
 #include "control_characters.h"
+#include "escape_sequences.h"
 #include "sequences.h"
 
 enum CHARACTER_TYPE {
@@ -58,14 +60,14 @@ enum CHARACTER_TYPE {
 };
 
 enum CHARACTER_TYPE char_categorize(char c) {
-  if(c >= 0 && c <= 0x1F) return C0_CONTROL;
-  else if(c == 0x20) return SPACE;
+  if(c >= 0 && c <= 0x1F)         return C0_CONTROL;
+  else if(c == 0x20)              return SPACE;
   else if(c >= 0x20 && c <= 0x2F) return INTERMEDIATE;
   else if(c >= 0x30 && c <= 0x3F) return PARAMETER;
   else if(c >= 0x40 && c <= 0x5F) return UPPERCASE;
   else if(c >= 0x50 && c <= 0x7E) return LOWERCASE;
-  else if(c == 0x7F) return DELETE;
-  else return OTHER;
+  else if(c == 0x7F)              return DELETE;
+  else                            return OTHER;
 }
 
 /*
@@ -126,11 +128,15 @@ void esc_reset(struct terminal* t) {
 }
 
 /*
+ * Appends character to terminal->esc.buf, and if it's complete, return true
+ *
  * 1. When the buffer is complete ( decided by esc_is_complete() ), return true
  * to run sequence handler.
  *
  * 2. Append given character to terminal->esc.buf, ONLY if when c is validated by
  * esc_is_valid(). When it's not valid, the buffer will be reset.
+ *
+ * TODO maybe check validity first
  */
 bool esc_append(struct terminal* t, char c) {
   bytebuffer_append(t->esc.buf, &c, 1);
@@ -152,31 +158,35 @@ bool esc_append(struct terminal* t, char c) {
  */
 void control_character(struct terminal* t, char c) {
   t->esc.state = STATE_NEUTRAL;
-  if(handle_control_character(c))
-    handle_control_character(c)(t);
-  else
-    log_debug("Control code not found: %d", c);
+  if(handle_control_character(c)) handle_control_character(c)(t);
+  else log_debug("Control code not found: %d", c);
 }
 
 /*
- * Handles escape sequence
- * which is all sequences starts with \033
+ * Handles escape sequence ( ESC )
  *
- * change state to control sequence(csi) when [ is given
- * change state to device control sequence(dcs) when P is given
- * change state to operating system command(osc) when ] is given
+ * change state to control sequence ( CSI ) when [ is given
+ * change state to device control sequence ( DCS ) when P is given
+ * change state to operating system command ( OSC ) when ] is given
+ *
+ * escape_sequence() will be called when the full sequence is ready, and arguement c will contain
+ * the final character. After finishing job, terminal->esc needs to be reset ( by esc_reset() ), unless 
+ * the state was changed for further sequence ( CSI, DCS, OSC )
  */
 void escape_sequence(struct terminal* t, char c) {
-  if(c == '[') t->esc.state = STATE_CSI;
-  else if(c == ']') t->esc.state = STATE_DCS;
-  else if(c == 'P') t->esc.state = STATE_OSC;
-  else {
-    log_debug("escape_sequence : %d %c", c, c);
-    t->esc.state = STATE_NEUTRAL;
-    esc_reset(t);
-  }
+  if(handle_escape_sequence(c)) handle_escape_sequence(c)(t);
+  else log_debug("Escape sequence not found: %c");
+  if(t->esc.state != STATE_ESC) return;
+  esc_reset(t);
 }
 
+/*
+ * Handles control sequence ( SCI )
+ *
+ * control_sequence() will be called when the full sequence is ready, and argument c will contain
+ * the final character. After finishing job, terminal->esc needs to be reset ( by esc_reset () ).
+ * Unlike escape_sequence() terminal->esc has to be reset always since there is no event causing state change.
+ */
 void control_sequence(struct terminal* t, char c) {
   log_debug("CSI complete: %.*s", bytebuffer_size(t->esc.buf), t->esc.buf->b);
 
@@ -192,16 +202,37 @@ void control_sequence(struct terminal* t, char c) {
   esc_reset(t);
 }
 
-void device_control_sequence(struct terminal* t, char c) {
+/*
+ * device control sequence ( DCS ) & operating system command ( OSC )
+ * 
+ * device_control_sequence() & operating_system_command() will be called when the full sequence is ready, but
+ * no final character argument is provided since its finalizer is always "\007" or "\003\".
+ * terminal->esc had to be reset always ( by esc_reset() )
+ */
+void device_control_sequence(struct terminal* t) {
   log_debug("DCS complete: %.*s", bytebuffer_size(t->esc.buf), t->esc.buf->b);
   esc_reset(t);
 }
 
-void operating_system_command(struct terminal* t, char c) {
+void operating_system_command(struct terminal* t) {
   log_debug("OSC complete: %.*s", bytebuffer_size(t->esc.buf), t->esc.buf->b);
   esc_reset(t);
 }
 
+/*
+ * Handles all input from terminal.
+ *
+ * In detail,
+ * When state is neutral
+ *  1) if given character is C0, handles C0 ( run control_character() )
+ *  2) if given character is printable, append to terminal screen
+ *  3) UTF8 decoding TODO
+ *
+ * When state is ESC, CSI, OSC, DCS
+ *  - append character to terminal->esc.buf 
+ *  - when character is final ( when esc_append() returns true ), handle sequence 
+ *  with escape_sequence(), control_sequence(), device_control_sequence(), operating_system_command()
+ */
 void parse(struct terminal* term, char* buf, int size) {
   for(int i = 0; i < size; i++) {
     char c = buf[i];
@@ -210,18 +241,9 @@ void parse(struct terminal* term, char* buf, int size) {
     if(term->esc.state == STATE_NEUTRAL) {
       if(chtype == C0_CONTROL) control_character(term, c);
       else terminal_write_byte(term, c);
-    } else if(term->esc.state == STATE_ESC) {
-      if(esc_append(term, c))
-        escape_sequence(term, c);
-    } else if(term->esc.state == STATE_CSI) {
-      if(esc_append(term, c))
-        control_sequence(term, c);
-    } else if(term->esc.state == STATE_OSC) {
-      if(esc_append(term, c))
-        device_control_sequence(term, c);
-    } else if(term->esc.state == STATE_DCS) {
-      if(esc_append(term, c))
-        operating_system_command(term, c);
-    }
+    } else if(term->esc.state == STATE_ESC && esc_append(term, c)) escape_sequence(term, c);
+    else if(term->esc.state == STATE_CSI && esc_append(term, c))   control_sequence(term, c);
+    else if(term->esc.state == STATE_OSC && esc_append(term, c))   device_control_sequence(term);
+    else if(term->esc.state == STATE_DCS && esc_append(term, c))   operating_system_command(term);
   }
 }
