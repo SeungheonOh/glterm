@@ -1,3 +1,7 @@
+/*
+ * TODO
+ * handle ioctl size change
+ */
 #include <string.h>
 #include <signal.h>
 
@@ -74,6 +78,5 @@ int main(int argc, char** argv) {
 
   window_destroy(win);
   font_free(&font);
-
   pseudo_kill(&term);
 }
