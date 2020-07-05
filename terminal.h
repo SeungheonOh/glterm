@@ -15,15 +15,6 @@ enum ESC_STATE {
   STATE_DCS      // Escape(DCS)
 };
 
-struct esc_sequence {
-  bytebuffer* buf;        // For storing esc codes
-  enum ESC_STATE state;   // State of parser
-};
-
-struct point {
-  unsigned int x, y;
-};
-
 enum CELL_ATTRIBUTE {
   ATTR_OFF          = 0,
   ATTR_BOLD         = 1,
@@ -31,6 +22,15 @@ enum CELL_ATTRIBUTE {
   ATTR_UNDERLINE    = 1 < 2,
   ATTR_BLINK        = 1 < 3,
   ATTR_INVERSE      = 1 < 4
+};
+
+struct esc_sequence {
+  bytebuffer* buf;        // For storing esc codes
+  enum ESC_STATE state;   // State of parser
+};
+
+struct point {
+  unsigned int x, y;
 };
 
 struct cell {
