@@ -135,38 +135,38 @@ void US (struct terminal* t) {
 
 void (*handle_control_character(char c))(struct terminal* t) {
   switch(c) {
-    case 0x00: return NUL;
-    case 0x01: return SOH;
-    case 0x02: return STX;
-    case 0x03: return ETX;
-    case 0x04: return EOT;
-    case 0x05: return ENQ;
-    case 0x06: return ACK;
-    case 0x07: return BEL;
-    case 0x08: return BS;
-    case 0x09: return HT;
-    case 0x0A: return LF;
-    case 0x0B: return VT;
-    case 0x0C: return FF;
-    case 0x0D: return CR;
-    case 0x0E: return SO;
-    case 0x0F: return SI;
-    case 0x10: return DLE;
-    case 0x11: return XON;
-    case 0x12: return DC2;
-    case 0x13: return XOFF;
-    case 0x14: return DC4;
-    case 0x15: return NAK;
-    case 0x16: return SYN;
-    case 0x17: return ETB;
-    case 0x18: return CAN;
-    case 0x19: return EM;
-    case 0x1A: return SUB;
-    case 0x1B: return ESC;
-    case 0x1C: return FS;
-    case 0x1D: return GS;
-    case 0x1E: return RS;
-    case 0x1F: return US;
+    case 0x00: return NUL; //NUL
+    case 0x01: return SOH; //SOH
+    case 0x02: return STX; //STX
+    case 0x03: return ETX; //ETX
+    case 0x04: return EOT; //EOT
+    case 0x05: return ENQ; //ENQ
+    case 0x06: return ACK; //ACK
+    case 0x07: return BEL; //BEL:
+    case 0x08: return BS;  //BS
+    case 0x09: return HT;  //HT
+    case 0x0A: return LF;  //LF
+    case 0x0B: return VT;  //VT
+    case 0x0C: return FF;  //FF
+    case 0x0D: return CR;  //CR
+    case 0x0E: return SO;  //SO
+    case 0x0F: return SI;  //SI
+    case 0x10: return DLE; //DLE
+    case 0x11: return XON; //XON
+    case 0x12: return DC2; //DC2
+    case 0x13: return XOFF;//XOFF
+    case 0x14: return DC4; //DC4
+    case 0x15: return NAK; //NAK
+    case 0x16: return SYN; //SYN
+    case 0x17: return ETB; //ETB
+    case 0x18: return CAN; //CAN
+    case 0x19: return EM;  //EM 
+    case 0x1A: return SUB; //SUB
+    case 0x1B: return ESC; //ESC
+    case 0x1C: return FS;  //FS
+    case 0x1D: return GS;  //GS 
+    case 0x1E: return RS;  //RS
+    case 0x1F: return US;  //US
     default:   return NULL;
   }
 }
