@@ -45,6 +45,7 @@
 #include <stdbool.h>
 
 #include "control_characters.h"
+#include "control_sequences.h"
 #include "escape_sequences.h"
 #include "sequences.h"
 
@@ -181,24 +182,38 @@ void escape_sequence(struct terminal* t, char c) {
 }
 
 /*
- * Handles control sequence ( SCI )
+ * Handles control sequence ( CSI )
  *
  * control_sequence() will be called when the full sequence is ready, and argument c will contain
  * the final character. After finishing job, terminal->esc needs to be reset ( by esc_reset () ).
  * Unlike escape_sequence() terminal->esc has to be reset always since there is no event causing state change.
  */
-void control_sequence(struct terminal* t, char c) {
-  log_debug("CSI complete: %.*s", bytebuffer_size(t->esc.buf), t->esc.buf->b);
 
-  bytebuffer_append(t->esc.buf, "\0", 1);
-  if(strcmp(t->esc.buf->b, "[H") == 0) {
-    terminal_set_cursor(t, 0, 0);
-  } else if(strcmp(t->esc.buf->b, "[2J") == 0) {
-    terminal_clear(t);
-  } else if(strcmp(t->esc.buf->b, "[C") == 0) {
-    t->cursor.x--;
-    terminal_erase_cell(t, t->cursor.x, t->cursor.y);
-  }
+int esc_arg_parse(char* start, char* end, char** args, int arg_max) {
+  int cnt = 0;
+  char* iter = start;
+  args[0] = iter;
+  while(*iter++ && iter < end)
+    if(*iter == ';' && !(*iter = '\0'))
+      args[++cnt] = ++iter;
+  return (iter - 1 == start) ? 0 : cnt + 1;
+}
+
+void control_sequence(struct terminal* t, char c) {
+  *(t->esc.buf->p - 1) = '\0';
+
+  int argc;
+  char* argv[16] = { NULL };
+  bool dec = false; // when there is '?' after ESC[
+
+  char* arg_start = t->esc.buf->b + 1; // +1 account for [
+  char* arg_end = t->esc.buf->p - 1;   // -1 account for final character
+  if(*arg_start == '?' && (dec = true)) ++arg_start;
+  while(char_categorize(*(--arg_end)) == INTERMEDIATE) *(arg_end + 1) = *(arg_end);
+  *(++arg_end) = '\0';
+  argc = esc_arg_parse(arg_start, arg_end, argv, 10);
+
+  handle_control_sequence(c)(t, dec, argc, argv, (arg_end == t->esc.buf->p - 1) ? arg_end : arg_end + 1);
   esc_reset(t);
 }
 

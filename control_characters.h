@@ -117,7 +117,6 @@ void SUB(struct terminal* t) {
   log_debug("SUB control code");
 }
 void ESC(struct terminal* t) {
-  log_debug("ESC control code");
   t->esc.state = STATE_ESC;
 }
 void FS (struct terminal* t) {
@@ -142,7 +141,7 @@ void (*handle_control_character(char c))(struct terminal* t) {
     case 0x04: return EOT; //EOT
     case 0x05: return ENQ; //ENQ
     case 0x06: return ACK; //ACK
-    case 0x07: return BEL; //BEL:
+    case 0x07: return BEL; //BEL
     case 0x08: return BS;  //BS
     case 0x09: return HT;  //HT
     case 0x0A: return LF;  //LF

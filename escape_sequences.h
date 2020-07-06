@@ -77,7 +77,7 @@ void SPA(struct terminal* t) {
 }
 void EPA(struct terminal* t) {
 }
-void DA (struct terminal* t) {
+void ESC_DA (struct terminal* t) {
 }
 void CSI(struct terminal* t) {
   t->esc.state = STATE_CSI;
@@ -120,7 +120,7 @@ void (* handle_escape_sequence(char c))(struct terminal*) {
     case 'W':  return EPA; //EPA
     case 'X':  return NULL;//Reserved
     case 'Y':  return NULL;//Reserved
-    case 'Z':  return DA;  //DA
+    case 'Z':  return ESC_DA;  //DA
     case '[':  return CSI; //CSI
     case '\\': return ST;  //ST
     case ']':  return OSC; //OSC
