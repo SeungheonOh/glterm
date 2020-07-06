@@ -8,7 +8,6 @@
 */
 enum {
 	COLORS       = 256,
-	BITS_PER_RGB = 8,
 };
 
 const unsigned long color256[COLORS] = {
