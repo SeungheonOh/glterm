@@ -76,6 +76,7 @@ void FF (struct terminal* t) {
 }
 void CR (struct terminal* t) {
   log_debug("CR  control code");
+  terminal_set_cursor(t, 0, t->cursor.y);
 }
 void SO (struct terminal* t) {
   log_debug("SO  control code");

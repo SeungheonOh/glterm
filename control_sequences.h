@@ -62,12 +62,14 @@ void CUU(struct terminal* t, bool dec, int argc, char** argv, char* intermed) {
    *  [A = Move up one line, stop at top of screen, [9A = move up 9
    */
   log_debug("CUU");
+  terminal_move_cursor(t, 0, (argc >0)?atoi(argv[0]):1);
 }
 void CUD(struct terminal* t, bool dec, int argc, char** argv, char* intermed) {
   /* CUD - CUrsor Down
    *  [B = Move down one line, stop at bottom of screen
    */
   log_debug("CUD");
+  terminal_move_cursor(t, 0, -((argc >0)?atoi(argv[0]):1));
 }
 void CUF(struct terminal* t, bool dec, int argc, char** argv, char* intermed) {
   /*
@@ -75,6 +77,7 @@ void CUF(struct terminal* t, bool dec, int argc, char** argv, char* intermed) {
    *  [C = Move forward one position, stop at right edge of screen
    */
   log_debug("CUF");
+  terminal_move_cursor(t, (argc >0)?atoi(argv[0]):1, 0);
 }
 void CUB(struct terminal* t, bool dec, int argc, char** argv, char* intermed) {
   /*
@@ -82,6 +85,7 @@ void CUB(struct terminal* t, bool dec, int argc, char** argv, char* intermed) {
    *  [D = Same as BackSpace, stop at left edge of screen
    */
   log_debug("CUB");
+  terminal_move_cursor(t, -((argc >0)?atoi(argv[0]):1), 0);
 }
 void CNL(struct terminal* t, bool dec, int argc, char** argv, char* intermed) {
   /*
@@ -89,6 +93,9 @@ void CNL(struct terminal* t, bool dec, int argc, char** argv, char* intermed) {
    *  [5E = Move to first position of 5th line down
    */
   log_debug("CNL");
+  if(argc < 1) return;
+  t->cursor.x = 0;
+  terminal_move_cursor(t, 0, atoi(argv[0]));
 }
 void CPL(struct terminal* t, bool dec, int argc, char** argv, char* intermed) {
   /*
@@ -96,6 +103,9 @@ void CPL(struct terminal* t, bool dec, int argc, char** argv, char* intermed) {
    *  [5F = Move to first position of 5th line previous
    */
   log_debug("CPL");
+  if(argc < 1) return;
+  t->cursor.x = 0;
+  terminal_move_cursor(t, 0, -atoi(argv[0]));
 }
 void CHA(struct terminal* t, bool dec, int argc, char** argv, char* intermed) {
   /*
@@ -103,6 +113,8 @@ void CHA(struct terminal* t, bool dec, int argc, char** argv, char* intermed) {
    *  [40G = Move to column 40 of current line
    */
   log_debug("CHA");
+  if(argc < 1) return;
+  terminal_move_cursor(t, atoi(argv[0]), t->cursor.y);
 }
 void CUP(struct terminal* t, bool dec, int argc, char** argv, char* intermed) {
   /*
@@ -110,9 +122,14 @@ void CUP(struct terminal* t, bool dec, int argc, char** argv, char* intermed) {
    *  [H = Home, [24;80H = Row 24, Column 80
    */
   log_debug("CUP");
+  if(argc == 0)
+    terminal_set_cursor(t, 0, 0);
+  else if(argc == 2)
+    terminal_set_cursor(t, atoi(argv[1]), atoi(argv[0]));
 }
 void CHT(struct terminal* t, bool dec, int argc, char** argv, char* intermed) {
   /*
+   * TODO
    * CHT - Cursor Horizontal Tabulation
    *  [I = Same as HT (Control-I), [3I = Go forward 3 tabs
    */
@@ -125,8 +142,20 @@ void ED (struct terminal* t, bool dec, int argc, char** argv, char* intermed) {
    *  [1J = Erase from beginning to current position (inclusive)
    *  [2J = Erase entire display
    *  [?0J = Selective erase in display ([?1J, [?2J similar)
+   *
+   *  ignore ?s
    */
   log_debug("ED ");
+
+  if(argc == 0 || atoi(argv[0]) == 0) {
+    for(int i = t->cursor.x + t->cursor.y * t->cols; i < t->cols * t->rows; i++)
+      t->screen[i].d = false;
+  } else if(atoi(argv[0]) == 1) {
+    for(int i = 0; i < t->cursor.x + t->cursor.y * t->cols; i++)
+      t->screen[i].d = false;
+  } else if(atoi(argv[0]) == 2) {
+    terminal_clear(t);
+  }
 }
 void EL (struct terminal* t, bool dec, int argc, char** argv, char* intermed) {
   /*
@@ -137,6 +166,16 @@ void EL (struct terminal* t, bool dec, int argc, char** argv, char* intermed) {
    *  [?0K = Selective erase to end of line ([?1K, [?2K similar)
    */
   log_debug("EL ");
+  if(argc == 0 || atoi(argv[0]) == 0) {
+    for(int i = t->cursor.x; i < t->cols; i++)
+      t->screen[i + t->cursor.y * t->cols].d = false;
+  } else if(atoi(argv[0]) == 1) {
+    for(int i = 0; i < t->cursor.x; i++)
+      t->screen[i + t->cursor.y * t->cols].d = false;
+  } else if(atoi(argv[0]) == 2) {
+    for(int i = 0; i < t->cols; i++)
+      t->screen[i + t->cursor.y * t->cols].d = false;
+  }
 }
 void IL (struct terminal* t, bool dec, int argc, char** argv, char* intermed) {
   /*
@@ -144,6 +183,12 @@ void IL (struct terminal* t, bool dec, int argc, char** argv, char* intermed) {
    *  [3L = Insert 3 lines if currently in scrolling region
    */
   log_debug("IL ");
+  if(argc < 0) return;
+  if(t->cursor.y + atoi(argv[0]) > t->rows) return;
+  for(int i = 0; i < t->cursor.x; i++) {
+    t->screen[i + (t->cursor.y + atoi(argv[0])) * t->cols] = t->screen[i + t->cursor.y * t->cols];
+    t->screen[i + t->cursor.y * t->cols].d = false;
+  }
 }
 void DL (struct terminal* t, bool dec, int argc, char** argv, char* intermed) {
   /*
@@ -163,15 +208,25 @@ void EA (struct terminal* t, bool dec, int argc, char** argv, char* intermed) {
   /*
    * EA  - Erase in qualified Area (defined by DAQ)
    *  [0O, [1O, [2O act like [J but within current area
+   *  Just use ED
    */
   log_debug("EA ");
+  ED(t, dec, argc, argv, intermed);
 }
 void DCH(struct terminal* t, bool dec, int argc, char** argv, char* intermed) {
   /*
    * DCH - Delete Character, from current position to end of field
    *  [4P = Delete 4 characters, VT102 series
+   *
+   *  xterm and urxvt ignore it
+   *  https://vt100.net/docs/vt510-rm/DCH.html
    */
   log_debug("DCH");
+  int d = ((argc > 0)?atoi(argv[0]):1);
+  for(int i = t->cursor.x; i < t->cols; i++) {
+    if(i + d < t->cols)t->screen[i + t->cursor.y * t->cols] = t->screen[i + d + t->cursor.y * t->cols];
+    else t->screen[(i + t->cursor.x) + t->cursor.y * t->cols].d = false;
+  }
 }
 void SEM(struct terminal* t, bool dec, int argc, char** argv, char* intermed) {
   /*
@@ -549,5 +604,6 @@ void (*handle_control_sequence(char c))(struct terminal*, bool, int, char**, cha
     case 'm':  return SGR;
     case 'n':  return DSR;
     case 'o':  return DAQ;
+    default:   return NULL;
   }
 }
