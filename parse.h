@@ -196,7 +196,7 @@ int esc_arg_parse(char* start, char* end, char** args, int arg_max) {
   while(*iter++ && iter < end)
     if(*iter == ';' && !(*iter = '\0'))
       args[++cnt] = ++iter;
-  return (iter - 1 == start) ? 0 : cnt + 1;
+  return (start == end) ? 0 : cnt + 1;
 }
 
 void control_sequence(struct terminal* t, char c) {
@@ -208,12 +208,13 @@ void control_sequence(struct terminal* t, char c) {
 
   char* arg_start = t->esc.buf->b + 1; // +1 account for [
   char* arg_end = t->esc.buf->p - 1;   // -1 account for final character
-  if(*arg_start == '?' && (dec = true)) ++arg_start;
-  while(char_categorize(*(--arg_end)) == INTERMEDIATE) *(arg_end + 1) = *(arg_end);
-  *(++arg_end) = '\0';
-  argc = esc_arg_parse(arg_start, arg_end, argv, 10);
+  if(*arg_start == '?' && (dec = true)) ++arg_start; // check if ? is present
+  while(char_categorize(*(--arg_end)) == INTERMEDIATE) *(arg_end + 1) = *(arg_end); // handle intermediates
+  *(++arg_end) = '\0'; // make it cstring for intermediates
+  argc = esc_arg_parse(arg_start, arg_end, argv, 16);
 
-  handle_control_sequence(c)(t, dec, argc, argv, (arg_end == t->esc.buf->p - 1) ? arg_end : arg_end + 1);
+  if(handle_control_sequence(c))
+    handle_control_sequence(c)(t, dec, argc, argv, (arg_end == t->esc.buf->p - 1) ? arg_end : arg_end + 1);
   esc_reset(t);
 }
 
