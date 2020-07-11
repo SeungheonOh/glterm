@@ -33,8 +33,8 @@ int main(int argc, char** argv) {
   font_load(argv[1], atlas, &font);
 
   struct terminal term;
-  terminal_init(&term, 80, 70, &font);
-  pseudo_init(&term, 80, 70);
+  terminal_init(&term, 80, 30, &font);
+  pseudo_init(&term, 80, 30);
   test_setcells(&term);
 
   win = window_create("win", &term);
@@ -54,17 +54,16 @@ int main(int argc, char** argv) {
       //terminal_write(&term, buffer, n);
       parse(&term, buffer, n);
 
-      float ratio;
-      int width, height;
-
-      glfwGetFramebufferSize(win, &width, &height);
-      glViewport(0, 0, width, height);
-      glClearColor(0, 0, 0, 1);
-      glClear(GL_COLOR_BUFFER_BIT);
-
-      glfw_render(win, &term, ftexture);
     }
+    float ratio;
+    int width, height;
 
+    glfwGetFramebufferSize(win, &width, &height);
+    glViewport(0, 0, width, height);
+    glClearColor(0, 0, 0, 1);
+    glClear(GL_COLOR_BUFFER_BIT);
+
+    glfw_render(win, &term, ftexture);
     glfwSwapBuffers(win);
     glfwPollEvents();
 
