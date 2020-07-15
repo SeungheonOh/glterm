@@ -11,8 +11,8 @@
 #include "colors.h"
 #include "font.h"
 #include "terminal.h"
-#include "parse.h"
 #include "pseudo.h"
+#include "parse.h"
 #include "render.h"
 
 atlas_settings atlas = (atlas_settings){
@@ -33,8 +33,8 @@ int main(int argc, char** argv) {
   font_load(argv[1], atlas, &font);
 
   struct terminal term;
-  terminal_init(&term, 80, 30, &font);
-  pseudo_init(&term, 80, 30);
+  terminal_init(&term, 80, 24, &font);
+  pseudo_init(&term, 80, 24);
   test_setcells(&term);
 
   win = window_create("win", &term);
@@ -50,10 +50,7 @@ int main(int argc, char** argv) {
     char buffer[100] = "\0";
     int n;
     if((n = pseudo_listen(&term, buffer, 100)) > 0 || currentTime - prevFrameTime >= 1.0) {
-      //log_debug("terminal: %s", buffer);
-      //terminal_write(&term, buffer, n);
       parse(&term, buffer, n);
-
     }
     float ratio;
     int width, height;

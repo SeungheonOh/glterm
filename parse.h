@@ -40,6 +40,8 @@
  *   ex) \033P123;123;123\033
  */
 
+// TODO rewrite entire parser
+
 #include <stdio.h>
 #include <stdlib.h>
 #include <stdbool.h>
@@ -200,6 +202,7 @@ int esc_arg_parse(char* start, char* end, char** args, int arg_max) {
 }
 
 void control_sequence(struct terminal* t, char c) {
+  for(int i = 0; i < bytebuffer_size(t->esc.buf); i++)log_debug("    %c", *(t->esc.buf->b+i));
   *(t->esc.buf->p - 1) = '\0';
 
   int argc;
@@ -254,10 +257,9 @@ void parse(struct terminal* term, char* buf, int size) {
     char c = buf[i];
     enum CHARACTER_TYPE chtype = char_categorize(c);
 
-    if(term->esc.state == STATE_NEUTRAL) {
-      if(chtype == C0_CONTROL) control_character(term, c);
-      else terminal_write_byte(term, c);
-    } else if(term->esc.state == STATE_ESC && esc_append(term, c)) escape_sequence(term, c);
+    if(chtype == C0_CONTROL) control_character(term, c);
+    else if(term->esc.state == STATE_NEUTRAL) terminal_write_byte(term, c);
+    else if(term->esc.state == STATE_ESC && esc_append(term, c)) escape_sequence(term, c);
     else if(term->esc.state == STATE_CSI && esc_append(term, c))   control_sequence(term, c);
     else if(term->esc.state == STATE_OSC && esc_append(term, c))   device_control_sequence(term);
     else if(term->esc.state == STATE_DCS && esc_append(term, c))   operating_system_command(term);

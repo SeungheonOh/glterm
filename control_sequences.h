@@ -61,38 +61,51 @@ void CUU(struct terminal* t, bool dec, int argc, char** argv, char* intermed) {
    * CUU - CUrsor Up
    *  [A = Move up one line, stop at top of screen, [9A = move up 9
    */
-  log_debug("CUU");
-  terminal_move_cursor(t, 0, (argc >0)?atoi(argv[0]):1);
+  //log_debug("CUU");
+  int i = 1; 
+  if(argc > 0) i = atoi(argv[0]);
+  if(i == 0) i = 1;
+  terminal_move_cursor(t, 0, -i);
 }
 void CUD(struct terminal* t, bool dec, int argc, char** argv, char* intermed) {
   /* CUD - CUrsor Down
    *  [B = Move down one line, stop at bottom of screen
    */
-  log_debug("CUD");
-  terminal_move_cursor(t, 0, -((argc >0)?atoi(argv[0]):1));
+  //log_debug("CUD");
+  int i = 1; 
+  if(argc > 0) i = atoi(argv[0]);
+  if(i == 0) i = 1;
+  terminal_move_cursor(t, 0, i);
+
 }
 void CUF(struct terminal* t, bool dec, int argc, char** argv, char* intermed) {
   /*
    * CUF - CUrsor Forward
    *  [C = Move forward one position, stop at right edge of screen
    */
-  log_debug("CUF");
-  terminal_move_cursor(t, (argc >0)?atoi(argv[0]):1, 0);
+  //log_debug("CUF");
+  int i = 1; 
+  if(argc > 0) i = atoi(argv[0]);
+  if(i == 0) i = 1;
+  terminal_move_cursor(t, i, 0);
 }
 void CUB(struct terminal* t, bool dec, int argc, char** argv, char* intermed) {
   /*
    * CUB - CUrsor Backward
    *  [D = Same as BackSpace, stop at left edge of screen
    */
-  log_debug("CUB");
-  terminal_move_cursor(t, -((argc >0)?atoi(argv[0]):1), 0);
+  //log_debug("CUB");
+  int i = 1; 
+  if(argc > 0) i = atoi(argv[0]);
+  if(i == 0) i = 1;
+  terminal_move_cursor(t, -i, 0);
 }
 void CNL(struct terminal* t, bool dec, int argc, char** argv, char* intermed) {
   /*
    * CNL - Cursor to Next Line
    *  [5E = Move to first position of 5th line down
    */
-  log_debug("CNL");
+  //log_debug("CNL");
   if(argc < 1) return;
   t->cursor.x = 0;
   terminal_move_cursor(t, 0, atoi(argv[0]));
@@ -102,7 +115,7 @@ void CPL(struct terminal* t, bool dec, int argc, char** argv, char* intermed) {
    * CPL - Cursor to Previous Line
    *  [5F = Move to first position of 5th line previous
    */
-  log_debug("CPL");
+  //log_debug("CPL");
   if(argc < 1) return;
   t->cursor.x = 0;
   terminal_move_cursor(t, 0, -atoi(argv[0]));
@@ -112,7 +125,7 @@ void CHA(struct terminal* t, bool dec, int argc, char** argv, char* intermed) {
    * CHA - Cursor Horizontal position Absolute
    *  [40G = Move to column 40 of current line
    */
-  log_debug("CHA");
+  //log_debug("CHA");
   if(argc < 1) return;
   terminal_move_cursor(t, atoi(argv[0]), t->cursor.y);
 }
@@ -121,11 +134,11 @@ void CUP(struct terminal* t, bool dec, int argc, char** argv, char* intermed) {
    * CUP - CUrsor Position
    *  [H = Home, [24;80H = Row 24, Column 80
    */
-  log_debug("CUP");
+  //log_debug("CUP");
   if(argc == 0)
     terminal_set_cursor(t, 0, 0);
   else if(argc == 2)
-    terminal_set_cursor(t, atoi(argv[1]), atoi(argv[0]));
+    terminal_set_cursor(t, atoi(argv[1])-1, atoi(argv[0])-1);
 }
 void CHT(struct terminal* t, bool dec, int argc, char** argv, char* intermed) {
   /*
@@ -145,7 +158,7 @@ void ED (struct terminal* t, bool dec, int argc, char** argv, char* intermed) {
    *
    *  ignore ?s
    */
-  log_debug("ED ");
+  //log_debug("ED ");
 
   if(argc == 0 || atoi(argv[0]) == 0) {
     for(int i = t->cursor.x + t->cursor.y * t->cols; i < t->cols * t->rows; i++)
@@ -165,7 +178,7 @@ void EL (struct terminal* t, bool dec, int argc, char** argv, char* intermed) {
    *  [2K = Erase entire current line
    *  [?0K = Selective erase to end of line ([?1K, [?2K similar)
    */
-  log_debug("EL ");
+  //log_debug("EL ");
   if(argc == 0 || atoi(argv[0]) == 0) {
     for(int i = t->cursor.x; i < t->cols; i++)
       t->screen[i + t->cursor.y * t->cols].d = false;
@@ -182,7 +195,7 @@ void IL (struct terminal* t, bool dec, int argc, char** argv, char* intermed) {
    * IL  - Insert Line, current line moves down (VT102 series)
    *  [3L = Insert 3 lines if currently in scrolling region
    */
-  log_debug("IL ");
+  //log_debug("IL ");
   if(argc < 0) return;
   if(t->cursor.y + atoi(argv[0]) > t->rows) return;
   for(int i = 0; i < t->cursor.x; i++) {
@@ -221,7 +234,7 @@ void DCH(struct terminal* t, bool dec, int argc, char** argv, char* intermed) {
    *  xterm and urxvt ignore it
    *  https://vt100.net/docs/vt510-rm/DCH.html
    */
-  log_debug("DCH");
+  //log_debug("DCH");
   int d = ((argc > 0)?atoi(argv[0]):1);
   for(int i = t->cursor.x; i < t->cols; i++) {
     if(i + d < t->cols)t->screen[i + t->cursor.y * t->cols] = t->screen[i + d + t->cursor.y * t->cols];
@@ -235,6 +248,8 @@ void SEM(struct terminal* t, bool dec, int argc, char** argv, char* intermed) {
    *  [1Q = ICH/DCH affect the current line only
    *  [2Q = ICH/DCH affect current field (between tab stops) only
    *  [3Q = ICH/DCH affect qualified area (between protected fields)
+   *
+   *  No need for implementation, ( I guess )
    */
   log_debug("SEM");
 }
@@ -244,6 +259,9 @@ void CPR(struct terminal* t, bool dec, int argc, char** argv, char* intermed) {
    *  [24;80R = Cursor is positioned at line 24 column 80
    */
   log_debug("CPR");
+  char o[1000];
+  sprintf(o, "[%d;%dR", t->cursor.y, t->cursor.x);
+  if(!pseudo_write(t, o, strlen(o))) log_error("%s: failed to write to host", __func__);
 }
 void SU (struct terminal* t, bool dec, int argc, char** argv, char* intermed) {
   /*
@@ -251,6 +269,7 @@ void SU (struct terminal* t, bool dec, int argc, char** argv, char* intermed) {
    *  [3S = Move everything up 3 lines, bring in 3 new lines
    */
   log_debug("SU ");
+  terminal_scroll(t, (argc < 1)?1:atoi(argv[0]));
 }
 void SD (struct terminal* t, bool dec, int argc, char** argv, char* intermed) {
   /*
@@ -338,6 +357,9 @@ void DA (struct terminal* t, bool dec, int argc, char** argv, char* intermed) {
    *  [>0c = Secondary DA request (distinguishes VT240 from VT220)
    */
   log_debug("DA ");
+  char o[1000];
+  sprintf(o, "\033[?1;2c");
+  if(!pseudo_write(t, o, strlen(o))) log_error("%s: failed to write to host", __func__);
 }
 void VPA(struct terminal* t, bool dec, int argc, char** argv, char* intermed) {
   /*
@@ -361,7 +383,11 @@ void HVP(struct terminal* t, bool dec, int argc, char** argv, char* intermed) {
    *  [720,1440f = Move to 1 inch down and 2 inches over (decipoints)
    *  [24;80f = Move to row 24 column 80 if PUM is set to character
    */
-  log_debug("HVP");
+  //log_debug("HVP");
+  if(argc == 0)
+    terminal_set_cursor(t, 0, 0);
+  else if(argc == 2)
+    terminal_set_cursor(t, atoi(argv[1])-1, atoi(argv[0])-1);
 }
 void TBC(struct terminal* t, bool dec, int argc, char** argv, char* intermed) {
   /*

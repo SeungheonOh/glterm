@@ -82,9 +82,13 @@ void terminal_erase_cell(struct terminal* t, unsigned int x, unsigned int y) {
   t->screen[x + y * t->cols].d = false;
 }
 
-void terminal_set_cursor(struct terminal* t, unsigned int x, unsigned int y) {
-  t->cursor.x = (x > t->cols) ? t->cols : x;
-  t->cursor.y = (y > t->rows) ? t->rows : y;
+void terminal_set_cursor(struct terminal* t, int x, int y) {
+  if(x < 0) x = 0;
+  if(y < 0) y = 0;
+  if(x >= t->cols) x = t->cols-1;
+  if(y >= t->rows) y = t->rows-1;
+  t->cursor.x = x;
+  t->cursor.y = y;
 }
 
 void terminal_move_cursor(struct terminal* t, int x, int y) {
@@ -112,11 +116,11 @@ void terminal_scroll(struct terminal* t, int l) {
 
 void terminal_cursor_next(struct terminal* t) {
   t->cursor.x++;
-  if(t->cursor.x >= t->cols) {
+  if(t->cursor.x > t->cols) {
     t->cursor.x = 0;
     t->cursor.y++;
   }
-  if(t->cursor.y >= t->rows) {
+  if(t->cursor.y > t->rows) {
     terminal_scroll(t, 1);
     t->cursor.y = t->rows-1;
   }
@@ -124,14 +128,14 @@ void terminal_cursor_next(struct terminal* t) {
 
 void terminal_cursor_next_line(struct terminal* t) {
   t->cursor.y++;
-  if(t->cursor.y >= t->rows) {
+  if(t->cursor.y > t->rows) {
     terminal_scroll(t, 1);
     t->cursor.y = t->rows-1;
   }
 }
 
 void terminal_write_byte(struct terminal* t, unsigned int c) {
-  if(t->cursor.x + t->cursor.y * t->cols > t->cols * t->rows) return;
+  if(t->cursor.x + t->cursor.y * t->cols > t->cols * t->rows) log_debug("here");
   terminal_set_cell(t, c, t->cursor.x, t->cursor.y);
   terminal_cursor_next(t);
 }
