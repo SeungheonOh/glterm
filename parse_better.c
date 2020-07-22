@@ -20,7 +20,7 @@ enum PARSER_STATE {
   DCS_PASSTHROUGH,
 };
 
-char* parser_state_name(enum PARSER_STATE s) {
+const char* parser_state_name(enum PARSER_STATE s) {
   switch(s) {
     case GROUND:              return "ground";
     case ESCAPE:              return "escape";
